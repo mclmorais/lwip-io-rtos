@@ -63,7 +63,10 @@ void demoSerialTask(void *pvParameters);
 void adcTask(void *pvParameters);
 void pwmTask(void *pvParameters);
 
+uint32_t systemPower = 0;
+
 uint32_t x = 0;
+uint32_t y = 0;
 
 //*****************************************************************************
 //
@@ -123,6 +126,7 @@ uint32_t x = 0;
 //! enet_io directory:
 //!
 //! ../../../../tools/bin/makefsfile -i fs -o io_fsdata.h -r -h -q
+// C:\ti\TivaWare_C_Series-2.1.4.178\tools\bin\makefsfile -i fs -o io_fsdata.h -r -h -q
 //!
 //! For additional details on lwIP, refer to the lwIP web page at:
 //! http://savannah.nongnu.org/projects/lwip/
@@ -318,6 +322,7 @@ ControlCGIHandler(int32_t iIndex, int32_t i32NumParams, char *pcParam[],
     // We have not encountered any parameter errors yet.
     //
     bParamError = false;
+    UARTprintf("Decisions!\n");
 
     //
     // Get each of the expected parameters.
@@ -356,6 +361,7 @@ static char *
 SetTextCGIHandler(int32_t i32Index, int32_t i32NumParams, char *pcParam[],
                   char *pcValue[])
 {
+    UARTprintf("Decisions!\n");
     long lStringParam;
     char pcDecodedString[48];
 
@@ -707,8 +713,7 @@ main(void)
 
     xTaskCreate(adcTask, (const portCHAR *)"ADC Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
-
-    //xTaskCreate(pwmTask, (const portCHAR *)"PWM Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    xTaskCreate(pwmTask, (const portCHAR *)"PWM Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
 
     vTaskStartScheduler();
@@ -829,10 +834,7 @@ void pwmTask(void *pvParameters)
 
     ROM_GPIOPinTypePWM(GPIO_PORTG_BASE, GPIO_PIN_0);
 
-
-    //
     // Enable the PWM0 peripheral
-    //
     SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
 
     //

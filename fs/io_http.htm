@@ -18,16 +18,14 @@
                             <h2 align="center">I/O Control Demo 1</h2>
                         </center>
                         <hr size="2" width="100%">
-                        <p>This demonstration shows how to perform control and status reporting using HTTP requests embedded within Javascript code on the web page itself. Using this method, it is possible to update sections of text on the current page without the need to refresh the
-                            entire page.</p>
-                        <p>Toggle USER LED and report the state of the LED</p>
+                        <p>Esta página controla o ligamento-desligamento da bomba e modifica seu funcionamento entre controle manual e automático.</p>
+                        <p><b>Ligar/Desligar Sistema de Controle da Bomba</b></p>
                         <table>
                             <tbody>
                                 <tr>
                                     <td>
-                                        <input id="toggle" value="Toggle LED" onclick="toggle_led();" type="button">
+                                        <input id="toggle" value="Alternar Bomba" onclick="toggle_led();" type="button">
                                     </td>
-                                    <td>USER LED:</td>
                                     <td>
                                         <div id="ledstate" align="center">-</div>
                                     </td>
@@ -35,21 +33,31 @@
                             </tbody>
                         </table>
                         <p></p>
-                        <p>Set the speed of the animation LED. Speed is expressed as a percentage.</p>
+                        <br>
+                        <p><b>Selecionar Modo Manual/Automático</b></p>
                         <table>
                             <tbody>
                                 <tr>
-                                    <td>Current Speed:</td>
+                                    <td>Velocidade Atual:</td>
                                     <td>
                                         <div id="current_speed" align="center">-</div>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>
-                                        <input id="speed_set" value="Set Speed" onclick="speedSet();" type="button">
+                                        <input id="speed_set" value="Modo Manual" onclick="speedSet();" type="button">
                                     </td>
                                     <td>
                                         <input maxlength="3" size="4" id="speed_percent" type="text">%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <input id="speed_set" value="Modo Automático" onclick="setInterval(speedGet, 500)" type="button">
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
