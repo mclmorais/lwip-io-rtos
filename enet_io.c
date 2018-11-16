@@ -62,11 +62,12 @@ void testTask(void *pvParameters);
 void demoSerialTask(void *pvParameters);
 void adcTask(void *pvParameters);
 void pwmTask(void *pvParameters);
+uint32_t getSpeed();
 
-uint32_t systemPower = 0;
-
-uint32_t x = 0;
-uint32_t y = 0;
+bool systemOnline = false;
+bool automaticMode = true;
+uint32_t automaticModeSpeed = 0;
+uint32_t manualModeSpeed = 0;
 
 //*****************************************************************************
 //
@@ -138,8 +139,8 @@ uint32_t y = 0;
 // Defines for setting up the system clock.
 //
 //*****************************************************************************
-#define SYSTICKHZ               100
-#define SYSTICKMS               (1000 / SYSTICKHZ)
+#define SYSTICKHZ 100
+#define SYSTICKMS (1000 / SYSTICKHZ)
 
 //*****************************************************************************
 //
@@ -147,8 +148,8 @@ uint32_t y = 0;
 // significant with lower values indicating higher priority interrupts.
 //
 //*****************************************************************************
-#define SYSTICK_INT_PRIORITY    0x80
-#define ETHERNET_INT_PRIORITY   0xC0
+#define SYSTICK_INT_PRIORITY 0x80
+#define ETHERNET_INT_PRIORITY 0xC0
 
 //*****************************************************************************
 //
@@ -157,7 +158,7 @@ uint32_t y = 0;
 //     0 -> An indicator that the animation timer interrupt has occurred.
 //
 //*****************************************************************************
-#define FLAG_TICK            0
+#define FLAG_TICK 0
 static volatile unsigned long g_ulFlags;
 
 //*****************************************************************************
@@ -172,9 +173,9 @@ extern void httpd_init(void);
 // SSI tag indices for each entry in the g_pcSSITags array.
 //
 //*****************************************************************************
-#define SSI_INDEX_LEDSTATE  0
-#define SSI_INDEX_FORMVARS  1
-#define SSI_INDEX_SPEED     2
+#define SSI_INDEX_LEDSTATE 0
+#define SSI_INDEX_FORMVARS 1
+#define SSI_INDEX_SPEED 2
 
 //*****************************************************************************
 //
@@ -186,10 +187,10 @@ extern void httpd_init(void);
 //
 //*****************************************************************************
 static const char *g_pcConfigSSITags[] =
-{
-    "LEDtxt",        // SSI_INDEX_LEDSTATE
-    "FormVars",      // SSI_INDEX_FORMVARS
-    "speed"          // SSI_INDEX_SPEED
+    {
+        "LEDtxt",   // SSI_INDEX_LEDSTATE
+        "FormVars", // SSI_INDEX_FORMVARS
+        "speed"     // SSI_INDEX_SPEED
 };
 
 //*****************************************************************************
@@ -198,7 +199,7 @@ static const char *g_pcConfigSSITags[] =
 // find in our configuration pages.
 //
 //*****************************************************************************
-#define NUM_CONFIG_SSI_TAGS     (sizeof(g_pcConfigSSITags) / sizeof (char *))
+#define NUM_CONFIG_SSI_TAGS (sizeof(g_pcConfigSSITags) / sizeof(char *))
 
 //*****************************************************************************
 //
@@ -223,8 +224,8 @@ static int32_t SSIHandler(int32_t iIndex, char *pcInsert, int32_t iInsertLen);
 // CGI URI indices for each entry in the g_psConfigCGIURIs array.
 //
 //*****************************************************************************
-#define CGI_INDEX_CONTROL       0
-#define CGI_INDEX_TEXT          1
+#define CGI_INDEX_CONTROL 0
+#define CGI_INDEX_TEXT 1
 
 //*****************************************************************************
 //
@@ -235,9 +236,9 @@ static int32_t SSIHandler(int32_t iIndex, char *pcInsert, int32_t iInsertLen);
 //
 //*****************************************************************************
 static const tCGI g_psConfigCGIURIs[] =
-{
-    { "/iocontrol.cgi", (tCGIHandler)ControlCGIHandler }, // CGI_INDEX_CONTROL
-    { "/settxt.cgi", (tCGIHandler)SetTextCGIHandler }     // CGI_INDEX_TEXT
+    {
+        {"/iocontrol.cgi", (tCGIHandler)ControlCGIHandler}, // CGI_INDEX_CONTROL
+        {"/settxt.cgi", (tCGIHandler)SetTextCGIHandler}     // CGI_INDEX_TEXT
 };
 
 //*****************************************************************************
@@ -245,7 +246,7 @@ static const tCGI g_psConfigCGIURIs[] =
 // The number of individual CGI URIs that are configured for this system.
 //
 //*****************************************************************************
-#define NUM_CONFIG_CGI_URIS     (sizeof(g_psConfigCGIURIs) / sizeof(tCGI))
+#define NUM_CONFIG_CGI_URIS (sizeof(g_psConfigCGIURIs) / sizeof(tCGI))
 
 //*****************************************************************************
 //
@@ -254,7 +255,7 @@ static const tCGI g_psConfigCGIURIs[] =
 // to load in response to it being called.
 //
 //*****************************************************************************
-#define DEFAULT_CGI_RESPONSE    "/io_cgi.ssi"
+#define DEFAULT_CGI_RESPONSE "/io_cgi.ssi"
 
 //*****************************************************************************
 //
@@ -264,11 +265,11 @@ static const tCGI g_psConfigCGIURIs[] =
 // enter all the required parameters alongside the URI.
 //
 //*****************************************************************************
-#define PARAM_ERROR_RESPONSE    "/perror.htm"
+#define PARAM_ERROR_RESPONSE "/perror.htm"
 
-#define JAVASCRIPT_HEADER                                                     \
+#define JAVASCRIPT_HEADER \
     "<script type='text/javascript' language='JavaScript'><!--\n"
-#define JAVASCRIPT_FOOTER                                                     \
+#define JAVASCRIPT_FOOTER \
     "//--></script>\n"
 
 //*****************************************************************************
@@ -277,7 +278,7 @@ static const tCGI g_psConfigCGIURIs[] =
 //
 //*****************************************************************************
 #ifndef DHCP_EXPIRE_TIMER_SECS
-#define DHCP_EXPIRE_TIMER_SECS  45
+#define DHCP_EXPIRE_TIMER_SECS 45
 #endif
 
 //*****************************************************************************
@@ -300,8 +301,7 @@ uint32_t g_ui32SysClock;
 //
 //*****************************************************************************
 #ifdef DEBUG
-void
-__error__(char *pcFilename, uint32_t ui32Line)
+void __error__(char *pcFilename, uint32_t ui32Line)
 {
 }
 #endif
@@ -329,14 +329,14 @@ ControlCGIHandler(int32_t iIndex, int32_t i32NumParams, char *pcParam[],
     //
     i32LEDState = FindCGIParameter("LEDOn", pcParam, i32NumParams);
     i32Speed = GetCGIParam("speed_percent", pcParam, pcValue, i32NumParams,
-            &bParamError);
+                           &bParamError);
 
     //
     // Was there any error reported by the parameter parser?
     //
-    if(bParamError || (i32Speed < 0) || (i32Speed > 100))
+    if (bParamError || (i32Speed < 0) || (i32Speed > 100))
     {
-        return(PARAM_ERROR_RESPONSE);
+        return (PARAM_ERROR_RESPONSE);
     }
 
     //
@@ -349,7 +349,7 @@ ControlCGIHandler(int32_t iIndex, int32_t i32NumParams, char *pcParam[],
     //
     // Send back the default response page.
     //
-    return(DEFAULT_CGI_RESPONSE);
+    return (DEFAULT_CGI_RESPONSE);
 }
 
 //*****************************************************************************
@@ -373,9 +373,9 @@ SetTextCGIHandler(int32_t i32Index, int32_t i32NumParams, char *pcParam[],
     //
     // If the parameter was not found, show the error page.
     //
-    if(lStringParam == -1)
+    if (lStringParam == -1)
     {
-        return(PARAM_ERROR_RESPONSE);
+        return (PARAM_ERROR_RESPONSE);
     }
 
     //
@@ -392,7 +392,7 @@ SetTextCGIHandler(int32_t i32Index, int32_t i32NumParams, char *pcParam[],
     //
     // Tell the HTTPD server which file to send back to the client.
     //
-    return(DEFAULT_CGI_RESPONSE);
+    return (DEFAULT_CGI_RESPONSE);
 }
 
 //*****************************************************************************
@@ -409,34 +409,34 @@ SSIHandler(int32_t iIndex, char *pcInsert, int32_t iInsertLen)
     //
     // Which SSI tag have we been passed?
     //
-    switch(iIndex)
+    switch (iIndex)
     {
-        case SSI_INDEX_LEDSTATE:
-            io_get_ledstate(pcInsert, iInsertLen);
-            break;
+    case SSI_INDEX_LEDSTATE:
+        io_get_ledstate(pcInsert, iInsertLen);
+        break;
 
-        case SSI_INDEX_FORMVARS:
-            usnprintf(pcInsert, iInsertLen,
-                    "%sls=%d;\nsp=%d;\n%s",
-                    JAVASCRIPT_HEADER,
-                    io_is_led_on(),
-                    io_get_animation_speed(),
-                    JAVASCRIPT_FOOTER);
-            break;
+    case SSI_INDEX_FORMVARS:
+        usnprintf(pcInsert, iInsertLen,
+                  "%sls=%d;\nsp=%d;\n%s",
+                  JAVASCRIPT_HEADER,
+                  io_is_led_on(),
+                  io_get_animation_speed(),
+                  JAVASCRIPT_FOOTER);
+        break;
 
-        case SSI_INDEX_SPEED:
-            io_get_animation_speed_string(pcInsert, iInsertLen);
-            break;
+    case SSI_INDEX_SPEED:
+        io_get_animation_speed_string(pcInsert, iInsertLen);
+        break;
 
-        default:
-            usnprintf(pcInsert, iInsertLen, "??");
-            break;
+    default:
+        usnprintf(pcInsert, iInsertLen, "??");
+        break;
     }
 
     //
     // Tell the server how many characters our insert string contains.
     //
-    return(strlen(pcInsert));
+    return (strlen(pcInsert));
 }
 
 //*****************************************************************************
@@ -444,8 +444,7 @@ SSIHandler(int32_t iIndex, char *pcInsert, int32_t iInsertLen)
 // The interrupt handler for the SysTick interrupt.
 //
 //*****************************************************************************
-void
-SysTickIntHandler(void)
+void SysTickIntHandler(void)
 {
     //
     // Call the lwIP timer handler.
@@ -458,8 +457,7 @@ SysTickIntHandler(void)
 // The interrupt handler for the timer used to pace the animation.
 //
 //*****************************************************************************
-void
-AnimTimerIntHandler(void)
+void AnimTimerIntHandler(void)
 {
     //
     // Clear the timer interrupt.
@@ -477,8 +475,7 @@ AnimTimerIntHandler(void)
 // Display an lwIP type IP Address.
 //
 //*****************************************************************************
-void
-DisplayIPAddress(uint32_t ui32Addr)
+void DisplayIPAddress(uint32_t ui32Addr)
 {
     char pcBuf[16];
 
@@ -486,7 +483,7 @@ DisplayIPAddress(uint32_t ui32Addr)
     // Convert the IP Address into a string.
     //
     usprintf(pcBuf, "%d.%d.%d.%d", ui32Addr & 0xff, (ui32Addr >> 8) & 0xff,
-            (ui32Addr >> 16) & 0xff, (ui32Addr >> 24) & 0xff);
+             (ui32Addr >> 16) & 0xff, (ui32Addr >> 24) & 0xff);
 
     //
     // Display the string.
@@ -499,8 +496,7 @@ DisplayIPAddress(uint32_t ui32Addr)
 // Required by lwIP library to support any host-related timer functions.
 //
 //*****************************************************************************
-void
-lwIPHostTimerHandler(void)
+void lwIPHostTimerHandler(void)
 {
     uint32_t ui32NewIPAddress;
 
@@ -512,19 +508,19 @@ lwIPHostTimerHandler(void)
     //
     // See if the IP address has changed.
     //
-    if(ui32NewIPAddress != g_ui32IPAddress)
+    if (ui32NewIPAddress != g_ui32IPAddress)
     {
         //
         // See if there is an IP address assigned.
         //
-        if(ui32NewIPAddress == 0xffffffff)
+        if (ui32NewIPAddress == 0xffffffff)
         {
             //
             // Indicate that there is no link.
             //
             UARTprintf("Waiting for link.\n");
         }
-        else if(ui32NewIPAddress == 0)
+        else if (ui32NewIPAddress == 0)
         {
             //
             // There is no IP address, so indicate that the DHCP process is
@@ -552,14 +548,13 @@ lwIPHostTimerHandler(void)
     //
     // If there is not an IP address.
     //
-    if((ui32NewIPAddress == 0) || (ui32NewIPAddress == 0xffffffff))
+    if ((ui32NewIPAddress == 0) || (ui32NewIPAddress == 0xffffffff))
     {
         //
         // Do nothing and keep waiting.
         //
     }
 }
-
 
 void configureEthernet()
 {
@@ -590,14 +585,14 @@ void configureEthernet()
     // USER0 and USER1 registers.
     //
     MAP_FlashUserGet(&ui32User0, &ui32User1);
-    if((ui32User0 == 0xffffffff) || (ui32User1 == 0xffffffff))
+    if ((ui32User0 == 0xffffffff) || (ui32User1 == 0xffffffff))
     {
         //
         // Let the user know there is no MAC address
         //
         UARTprintf("No MAC programmed!\n");
 
-        while(1)
+        while (1)
         {
         }
     }
@@ -612,11 +607,11 @@ void configureEthernet()
     // MAC address needed to program the hardware registers, then program
     // the MAC address into the Ethernet Controller registers.
     //
-    pui8MACArray[0] = ((ui32User0 >>  0) & 0xff);
-    pui8MACArray[1] = ((ui32User0 >>  8) & 0xff);
+    pui8MACArray[0] = ((ui32User0 >> 0) & 0xff);
+    pui8MACArray[1] = ((ui32User0 >> 8) & 0xff);
     pui8MACArray[2] = ((ui32User0 >> 16) & 0xff);
-    pui8MACArray[3] = ((ui32User1 >>  0) & 0xff);
-    pui8MACArray[4] = ((ui32User1 >>  8) & 0xff);
+    pui8MACArray[3] = ((ui32User1 >> 0) & 0xff);
+    pui8MACArray[4] = ((ui32User1 >> 8) & 0xff);
     pui8MACArray[5] = ((ui32User1 >> 16) & 0xff);
 
     //
@@ -650,7 +645,7 @@ void configureEthernet()
     // Pass our tag information to the HTTP server.
     //
     http_set_ssi_handler((tSSIHandler)SSIHandler, g_pcConfigSSITags,
-            NUM_CONFIG_SSI_TAGS);
+                         NUM_CONFIG_SSI_TAGS);
 
     //
     // Pass our CGI handlers to the HTTP server.
@@ -683,13 +678,13 @@ void configureController(void)
     g_ui32SysClock = MAP_SysCtlClockFreqSet((SYSCTL_XTAL_25MHZ |
                                              SYSCTL_OSC_MAIN |
                                              SYSCTL_USE_PLL |
-                                             SYSCTL_CFG_VCO_480), 120000000);
+                                             SYSCTL_CFG_VCO_480),
+                                            120000000);
 
     //
     // Configure the device pins.
     //
     PinoutSet(true, false);
-
 }
 
 //*****************************************************************************
@@ -699,8 +694,7 @@ void configureController(void)
 // browser.
 //
 //*****************************************************************************
-int
-main(void)
+int main(void)
 {
 
     configureController();
@@ -715,14 +709,13 @@ main(void)
 
     xTaskCreate(pwmTask, (const portCHAR *)"PWM Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
-
     vTaskStartScheduler();
-    while(1)
+    while (1)
     {
         //
         // Wait for a new tick to occur.
         //
-        while(!g_ulFlags)
+        while (!g_ulFlags)
         {
             //
             // Do nothing.
@@ -738,8 +731,8 @@ main(void)
         // Toggle the GPIO
         //
         MAP_GPIOPinWrite(GPIO_PORTN_BASE, GPIO_PIN_1,
-                (MAP_GPIOPinRead(GPIO_PORTN_BASE, GPIO_PIN_1) ^
-                 GPIO_PIN_1));
+                         (MAP_GPIOPinRead(GPIO_PORTN_BASE, GPIO_PIN_1) ^
+                          GPIO_PIN_1));
     }
 }
 
@@ -747,26 +740,14 @@ void ethernetTask(void *pvParameters)
 {
     UARTprintf("First time ethernet task!!\n");
 
-    while(1)
+    while (1)
     {
-    // Call the lwIP timer handler.
-    //
-    lwIPTimer(SYSTICKMS);
-    vTaskDelay(10 / portTICK_PERIOD_MS);
-
+        // Call the lwIP timer handler.
+        //
+        lwIPTimer(SYSTICKMS);
+        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }
-
-void testTask(void *pvParameters)
-{
-    while(1)
-    {
-        x++;
-        vTaskDelay(341 / portTICK_PERIOD_MS);
-
-    }
-}
-
 
 // Write text over the Stellaris debug interface UART port
 void demoSerialTask(void *pvParameters)
@@ -776,7 +757,7 @@ void demoSerialTask(void *pvParameters)
 
     for (;;)
     {
-        UARTprintf("\r\nThe value of x is %i.", x);
+        UARTprintf("\r\nVelocidade Atual de PWM: %i.", (int)(getSpeed() * 400.0 / 4096.0));
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
@@ -787,7 +768,6 @@ void configurePwm(void)
     ROM_GPIOPinConfigure(GPIO_PG0_M0PWM4);
 
     ROM_GPIOPinTypePWM(GPIO_PORTG_BASE, GPIO_PIN_0);
-
 
     //
     // Enable the PWM0 peripheral
@@ -837,45 +817,36 @@ void pwmTask(void *pvParameters)
     // Enable the PWM0 peripheral
     SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
 
-    //
     // Wait for the PWM0 module to be ready.
-    //
     while (!SysCtlPeripheralReady(SYSCTL_PERIPH_PWM0))
     {
     }
 
-    //
     // Configure the PWM generator for count down mode with immediate updates
     // to the parameters.
-    //
     PWMGenConfigure(PWM0_BASE, PWM_GEN_2,
                     PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC);
 
-    //
     // Set the period. For a 50 KHz frequency, the period = 1/50,000, or 20
     // microseconds. For a 20 MHz clock, this translates to 400 clock ticks.
     // Use this value to set the period.
-    //
     PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, 400);
-    //
-    // Set the pulse width of PWM0 for a 25% duty cycle.
-    //
-//    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_4, 400);
-    //
+
     // Start the timers in generator 0.
-    //
     PWMGenEnable(PWM0_BASE, PWM_GEN_2);
-    //
+
     // Enable the outputs.
-    //
     PWMOutputState(PWM0_BASE, (PWM_OUT_4_BIT), true);
 
-    while(1)
+    while (1)
     {
-        uint32_t pwmValue = (x*400.0/4096.0);
-        if(pwmValue > 350) pwmValue = 350;
-        PWMPulseWidthSet(PWM0_BASE, PWM_OUT_4, (int) pwmValue );
-     //   if(x >= 400) x = 0;
+        uint32_t pwmValue = systemOnline ? (getSpeed() * 400.0 / 4096.0) : 1;
+        if (pwmValue >= 400)
+            pwmValue = 399;
+        else if (pwmValue <= 0)
+            pwmValue = 1;
+        PWMPulseWidthSet(PWM0_BASE, PWM_OUT_4, (int)pwmValue);
+
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }
@@ -886,26 +857,34 @@ void adcTask(void *pvParameters)
     SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
 
     // Wait for the ADC0 module to be ready.
-    while(!SysCtlPeripheralReady(SYSCTL_PERIPH_ADC0)){};
+    while (!SysCtlPeripheralReady(SYSCTL_PERIPH_ADC0))
+    {
+    };
 
     // Enable the first sample sequencer to capture the value of channel 0 when
     // the processor trigger occurs.
     ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PROCESSOR, 0);
     ADCSequenceStepConfigure(ADC0_BASE, 0, 0,
-    ADC_CTL_IE | ADC_CTL_END | ADC_CTL_CH0);
+                             ADC_CTL_IE | ADC_CTL_END | ADC_CTL_CH0);
     ADCSequenceEnable(ADC0_BASE, 0);
 
-    while(1)
+    while (1)
     {
         // Trigger the sample sequence.
         ADCProcessorTrigger(ADC0_BASE, 0);
 
         // Wait until the sample sequence has completed.
-        while(!ADCIntStatus(ADC0_BASE, 0, false)){};
+        while (!ADCIntStatus(ADC0_BASE, 0, false))
+        {
+        };
 
         // Read the value from the ADC.
-        ADCSequenceDataGet(ADC0_BASE, 0, &x);
+        ADCSequenceDataGet(ADC0_BASE, 0, &automaticModeSpeed);
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
+}
 
+uint32_t getSpeed()
+{
+    return automaticMode ? automaticModeSpeed : manualModeSpeed;
 }

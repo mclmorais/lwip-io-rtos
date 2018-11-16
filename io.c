@@ -35,6 +35,11 @@
 #include "driverlib/rom.h"
 #include "utils/ustdlib.h"
 #include "io.h"
+extern bool systemOnline;
+extern bool automaticMode;
+extern uint32_t automaticModeSpeed;
+extern uint32_t manualModeSpeed;
+extern uint32_t getSpeed();
 
 //*****************************************************************************
 //
@@ -172,6 +177,8 @@ io_set_led(bool bOn)
 void
 io_get_ledstate(char * pcBuf, int iBufLen)
 {
+
+    usnprintf(pcBuf, iBufLen, systemOnline? "ON" : "OFF");
     //
     // Get the state of the LED
     //
@@ -213,7 +220,6 @@ io_is_led_on(void)
 // speed is described as a decimal number encoded as an ASCII string.
 //
 //*****************************************************************************
-extern uint32_t y, x;
 void
 io_set_animation_speed_string(char *pcBuf)
 {
@@ -237,7 +243,7 @@ io_set_animation_speed_string(char *pcBuf)
     {
         g_ulAnimSpeed = ulSpeed;
         io_set_timer(g_ulAnimSpeed);
-        y = ulSpeed;
+        manualModeSpeed = ulSpeed*4096.0/100.0;
     }
 }
 
@@ -267,7 +273,7 @@ io_set_animation_speed(unsigned long ulSpeed)
 void
 io_get_animation_speed_string(char *pcBuf, int iBufLen)
 {
-    usnprintf(pcBuf, iBufLen, "%d%%", (int)(x*100/4096));//g_ulAnimSpeed);
+    usnprintf(pcBuf, iBufLen, "%d%%", (int)(getSpeed()*100/4096));
 }
 
 //*****************************************************************************
