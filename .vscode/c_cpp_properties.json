@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:/lwipio/enet_io/FreeRTOS/portable/CCS/ARM_CM4F/portmacro.h",
+                "${workspaceFolder}/FreeRTOS/**",
+                "C:/ti/TivaWare_C_Series-2.1.4.178/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "cStandard": "c11",
+            "intelliSenseMode": "msvc-x64"
+        }
+    ],
+    "version": 4
+}

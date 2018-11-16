@@ -171,7 +171,7 @@ all: enet_io.out
 enet_io.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@echo 'Building target: "$@"'
 	@echo 'Invoking: ARM Linker'
-	"C:/codecomposer/ccsv8/tools/compiler/ti-cgt-arm_18.1.3.LTS/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 --abi=eabi -me -O2 --advice:power=all -g --gcc --define=ccs="ccs" --define=PART_TM4C1294NCPDT --define=TARGET_IS_TM4C129_RA0 --diag_warning=225 --diag_wrap=off --display_error_number --gen_func_subsections=on --ual -z -m"enet_io_ccs.map" --stack_size=1024 --heap_size=0 -i"C:/codecomposer/ccsv8/tools/compiler/ti-cgt-arm_18.1.3.LTS/lib" -i"C:/codecomposer/ccsv8/tools/compiler/ti-cgt-arm_18.1.3.LTS/include" --reread_libs --diag_wrap=off --display_error_number --warn_sections --xml_link_info="enet_io_linkInfo.xml" --rom_model -o "enet_io.out" $(ORDERED_OBJS)
+	"C:/codecomposer/ccsv8/tools/compiler/ti-cgt-arm_18.1.3.LTS/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 -me -O2 --advice:power=all --define=ccs="ccs" --define=PART_TM4C1294NCPDT --define=TARGET_IS_TM4C129_RA0 -g --gcc --diag_warning=225 --diag_wrap=off --display_error_number --gen_func_subsections=on --abi=eabi --ual -z -m"enet_io_ccs.map" --heap_size=0 --stack_size=1024 -i"C:/codecomposer/ccsv8/tools/compiler/ti-cgt-arm_18.1.3.LTS/lib" -i"C:/codecomposer/ccsv8/tools/compiler/ti-cgt-arm_18.1.3.LTS/include" --reread_libs --diag_wrap=off --display_error_number --warn_sections --xml_link_info="enet_io_linkInfo.xml" --rom_model -o "enet_io.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: "$@"'
 	@echo ' '
 	@$(MAKE) --no-print-directory post-build

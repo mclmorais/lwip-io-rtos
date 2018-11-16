@@ -26,14 +26,21 @@
 #include <string.h>
 #include "inc/hw_ints.h"
 #include "inc/hw_memmap.h"
+#include "driverlib/pin_map.h"
 #include "inc/hw_nvic.h"
 #include "inc/hw_types.h"
 #include "driverlib/flash.h"
+#include "driverlib/rom.h"
+#include "driverlib/rom_map.h"
+
 #include "driverlib/gpio.h"
 #include "driverlib/interrupt.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/systick.h"
 #include "driverlib/timer.h"
+#include "driverlib/adc.h"
+#include "driverlib/pwm.h"
+#include "driverlib/gpio.h"
 #include "driverlib/rom_map.h"
 #include "utils/locator.h"
 #include "utils/lwiplib.h"
@@ -53,6 +60,8 @@
 void ethernetTask(void *pvParameters);
 void testTask(void *pvParameters);
 void demoSerialTask(void *pvParameters);
+void adcTask(void *pvParameters);
+void pwmTask(void *pvParameters);
 
 uint32_t x = 0;
 
@@ -692,11 +701,15 @@ main(void)
 
     configureEthernet();
 
-    xTaskCreate(ethernetTask, (const portCHAR *)"Ei", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    xTaskCreate(ethernetTask, (const portCHAR *)"Ethernet Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
-    xTaskCreate(demoSerialTask, (const portCHAR *)"Serial", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    xTaskCreate(demoSerialTask, (const portCHAR *)"Serial Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
-    xTaskCreate(testTask, (const portCHAR *)"Test", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    xTaskCreate(adcTask, (const portCHAR *)"ADC Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+
+
+    //xTaskCreate(pwmTask, (const portCHAR *)"PWM Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+
 
     vTaskStartScheduler();
     while(1)
@@ -761,4 +774,136 @@ void demoSerialTask(void *pvParameters)
         UARTprintf("\r\nThe value of x is %i.", x);
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
+}
+
+void configurePwm(void)
+{
+
+    ROM_GPIOPinConfigure(GPIO_PG0_M0PWM4);
+
+    ROM_GPIOPinTypePWM(GPIO_PORTG_BASE, GPIO_PIN_0);
+
+
+    //
+    // Enable the PWM0 peripheral
+    //
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
+
+    //
+    // Wait for the PWM0 module to be ready.
+    //
+    while (!SysCtlPeripheralReady(SYSCTL_PERIPH_PWM0))
+    {
+    }
+
+    //
+    // Configure the PWM generator for count down mode with immediate updates
+    // to the parameters.
+    //
+    PWMGenConfigure(PWM0_BASE, PWM_GEN_2,
+                    PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC);
+
+    //
+    // Set the period. For a 50 KHz frequency, the period = 1/50,000, or 20
+    // microseconds. For a 20 MHz clock, this translates to 400 clock ticks.
+    // Use this value to set the period.
+    //
+    PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, 1600);
+    //
+    // Set the pulse width of PWM0 for a 25% duty cycle.
+    //
+    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_4, 1600);
+    //
+    // Start the timers in generator 0.
+    //
+    PWMGenEnable(PWM0_BASE, PWM_GEN_2);
+    //
+    // Enable the outputs.
+    //
+    PWMOutputState(PWM0_BASE, (PWM_OUT_4_BIT), true);
+}
+
+void pwmTask(void *pvParameters)
+{
+    ROM_GPIOPinConfigure(GPIO_PG0_M0PWM4);
+
+    ROM_GPIOPinTypePWM(GPIO_PORTG_BASE, GPIO_PIN_0);
+
+
+    //
+    // Enable the PWM0 peripheral
+    //
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
+
+    //
+    // Wait for the PWM0 module to be ready.
+    //
+    while (!SysCtlPeripheralReady(SYSCTL_PERIPH_PWM0))
+    {
+    }
+
+    //
+    // Configure the PWM generator for count down mode with immediate updates
+    // to the parameters.
+    //
+    PWMGenConfigure(PWM0_BASE, PWM_GEN_2,
+                    PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC);
+
+    //
+    // Set the period. For a 50 KHz frequency, the period = 1/50,000, or 20
+    // microseconds. For a 20 MHz clock, this translates to 400 clock ticks.
+    // Use this value to set the period.
+    //
+    PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, 400);
+    //
+    // Set the pulse width of PWM0 for a 25% duty cycle.
+    //
+//    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_4, 400);
+    //
+    // Start the timers in generator 0.
+    //
+    PWMGenEnable(PWM0_BASE, PWM_GEN_2);
+    //
+    // Enable the outputs.
+    //
+    PWMOutputState(PWM0_BASE, (PWM_OUT_4_BIT), true);
+
+    while(1)
+    {
+        uint32_t pwmValue = (x*400.0/4096.0);
+        if(pwmValue > 350) pwmValue = 350;
+        PWMPulseWidthSet(PWM0_BASE, PWM_OUT_4, (int) pwmValue );
+     //   if(x >= 400) x = 0;
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
+}
+
+void adcTask(void *pvParameters)
+{
+    // Enable the ADC0 module.
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0);
+
+    // Wait for the ADC0 module to be ready.
+    while(!SysCtlPeripheralReady(SYSCTL_PERIPH_ADC0)){};
+
+    // Enable the first sample sequencer to capture the value of channel 0 when
+    // the processor trigger occurs.
+    ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PROCESSOR, 0);
+    ADCSequenceStepConfigure(ADC0_BASE, 0, 0,
+    ADC_CTL_IE | ADC_CTL_END | ADC_CTL_CH0);
+    ADCSequenceEnable(ADC0_BASE, 0);
+
+    while(1)
+    {
+        // Trigger the sample sequence.
+        ADCProcessorTrigger(ADC0_BASE, 0);
+
+        // Wait until the sample sequence has completed.
+        while(!ADCIntStatus(ADC0_BASE, 0, false)){};
+
+        // Read the value from the ADC.
+        ADCSequenceDataGet(ADC0_BASE, 0, &x);
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
+
 }

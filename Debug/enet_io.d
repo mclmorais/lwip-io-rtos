@@ -14,15 +14,19 @@ enet_io.obj: C:/codecomposer/ccsv8/tools/compiler/ti-cgt-arm_18.1.3.LTS/include/
 enet_io.obj: C:/codecomposer/ccsv8/tools/compiler/ti-cgt-arm_18.1.3.LTS/include/linkage.h
 enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/inc/hw_ints.h
 enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/inc/hw_memmap.h
+enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/driverlib/pin_map.h
 enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/inc/hw_nvic.h
 enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/inc/hw_types.h
 enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/driverlib/flash.h
+enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/driverlib/rom.h
+enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/driverlib/rom_map.h
 enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/driverlib/gpio.h
 enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/driverlib/interrupt.h
 enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/driverlib/sysctl.h
 enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/driverlib/systick.h
 enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/driverlib/timer.h
-enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/driverlib/rom_map.h
+enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/driverlib/adc.h
+enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/driverlib/pwm.h
 enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/utils/locator.h
 enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/utils/lwiplib.h
 enet_io.obj: C:/ti/tivaware_c_series_2_1_4_178/third_party/lwip-1.4.1/src/include/lwip/opt.h
@@ -87,15 +91,19 @@ C:/codecomposer/ccsv8/tools/compiler/ti-cgt-arm_18.1.3.LTS/include/_ti_config.h:
 C:/codecomposer/ccsv8/tools/compiler/ti-cgt-arm_18.1.3.LTS/include/linkage.h: 
 C:/ti/tivaware_c_series_2_1_4_178/inc/hw_ints.h: 
 C:/ti/tivaware_c_series_2_1_4_178/inc/hw_memmap.h: 
+C:/ti/tivaware_c_series_2_1_4_178/driverlib/pin_map.h: 
 C:/ti/tivaware_c_series_2_1_4_178/inc/hw_nvic.h: 
 C:/ti/tivaware_c_series_2_1_4_178/inc/hw_types.h: 
 C:/ti/tivaware_c_series_2_1_4_178/driverlib/flash.h: 
+C:/ti/tivaware_c_series_2_1_4_178/driverlib/rom.h: 
+C:/ti/tivaware_c_series_2_1_4_178/driverlib/rom_map.h: 
 C:/ti/tivaware_c_series_2_1_4_178/driverlib/gpio.h: 
 C:/ti/tivaware_c_series_2_1_4_178/driverlib/interrupt.h: 
 C:/ti/tivaware_c_series_2_1_4_178/driverlib/sysctl.h: 
 C:/ti/tivaware_c_series_2_1_4_178/driverlib/systick.h: 
 C:/ti/tivaware_c_series_2_1_4_178/driverlib/timer.h: 
-C:/ti/tivaware_c_series_2_1_4_178/driverlib/rom_map.h: 
+C:/ti/tivaware_c_series_2_1_4_178/driverlib/adc.h: 
+C:/ti/tivaware_c_series_2_1_4_178/driverlib/pwm.h: 
 C:/ti/tivaware_c_series_2_1_4_178/utils/locator.h: 
 C:/ti/tivaware_c_series_2_1_4_178/utils/lwiplib.h: 
 C:/ti/tivaware_c_series_2_1_4_178/third_party/lwip-1.4.1/src/include/lwip/opt.h: 
