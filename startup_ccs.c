@@ -66,6 +66,8 @@ extern void lwIPEthernetIntHandler(void);
 extern void SysTickIntHandler(void);
 extern void AnimTimerIntHandler(void);
 
+extern void Timer0BIntHandler(void);
+
 //*****************************************************************************
 //
 // The vector table.  Note that the proper constructs must be placed on this to
@@ -113,7 +115,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // ADC Sequence 3
     IntDefaultHandler,                      // Watchdog timer
     IntDefaultHandler,                      // Timer 0 subtimer A
-    IntDefaultHandler,                      // Timer 0 subtimer B
+    Timer0BIntHandler,                      // Timer 0 subtimer B
     IntDefaultHandler,                      // Timer 1 subtimer A
     IntDefaultHandler,                      // Timer 1 subtimer B
     AnimTimerIntHandler,                    // Timer 2 subtimer A

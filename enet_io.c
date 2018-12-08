@@ -68,6 +68,7 @@ bool systemOnline = false;
 bool automaticMode = true;
 uint32_t automaticModeSpeed = 0;
 uint32_t manualModeSpeed = 0;
+uint32_t timerValue = 0;
 
 //*****************************************************************************
 //
@@ -687,6 +688,54 @@ void configureController(void)
     PinoutSet(true, false);
 }
 
+Timer0BIntHandler(void)
+{
+    TimerIntClear(TIMER0_BASE, TIMER_CAPB_EVENT);
+    timerValue++;
+    // timerValue = TimerValueGet(TIMER0_BASE, TIMER_B);
+    
+}
+
+void configureTimer(void)
+{
+    ROM_GPIOPinConfigure(GPIO_PD1_T0CCP1);
+
+    ROM_GPIOPinTypeGPIOInput(GPIO_PORTD_AHB_BASE, GPIO_PIN_1);
+
+
+    //
+    // Enable the Timer0 peripheral
+    //
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
+    //
+    // Wait for the Timer0 module to be ready.
+    //
+    while (!SysCtlPeripheralReady(SYSCTL_PERIPH_TIMER0))
+    {
+    }
+    //
+    // Configure TimerA as a half-width one-shot timer, and TimerB as a
+    // half-width edge capture counter.
+    //
+    TimerConfigure(TIMER0_BASE, (TIMER_CFG_SPLIT_PAIR | TIMER_CFG_A_ONE_SHOT |
+                                 TIMER_CFG_B_CAP_TIME));
+    //
+    // Set the count time for the the one-shot timer (TimerA).
+    //
+    TimerLoadSet(TIMER0_BASE, TIMER_A, 3000);
+    //
+    // Configure the counter (TimerB) to count both edges.
+    //
+    TimerControlEvent(TIMER0_BASE, TIMER_B, TIMER_EVENT_NEG_EDGE);
+
+    TimerIntEnable(TIMER0_BASE, TIMER_CAPB_EVENT);
+
+    //
+    // Enable the timers.
+    //
+    TimerEnable(TIMER0_BASE, TIMER_B);
+}
+
 //*****************************************************************************
 //
 // This example demonstrates the use of the Ethernet Controller and lwIP
@@ -701,11 +750,13 @@ int main(void)
 
     configureEthernet();
 
+    configureTimer();
+
     xTaskCreate(ethernetTask, (const portCHAR *)"Ethernet Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
     xTaskCreate(demoSerialTask, (const portCHAR *)"Serial Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
-    xTaskCreate(adcTask, (const portCHAR *)"ADC Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    //xTaskCreate(adcTask, (const portCHAR *)"ADC Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
     xTaskCreate(pwmTask, (const portCHAR *)"PWM Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
@@ -757,8 +808,9 @@ void demoSerialTask(void *pvParameters)
 
     for (;;)
     {
-        UARTprintf("\r\nVelocidade Atual de PWM: %i.", (int)(getSpeed() * 400.0 / 4096.0));
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        // UARTprintf("\r\nVelocidade Atual de PWM: %i.", (int)(getSpeed() * 400.0 / 4096.0));
+        UARTprintf("\r\nTempo de pulso de timer: %i.", (int)(timerValue));
+        vTaskDelay(300 / portTICK_PERIOD_MS);
     }
 }
 
