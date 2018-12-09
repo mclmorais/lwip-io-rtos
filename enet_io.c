@@ -50,10 +50,15 @@ uint32_t timerEntries = 0;
 bool firstPulse = true;
 uint32_t firstTime = 0;
 uint32_t secondTime = 0;
-uint32_t measuredFrequency = 0;
+int32_t measuredFrequency = 0;
+
+#define PERIOD_SAMPLES 10
+uint32_t periodAverage[PERIOD_SAMPLES] = {0};
+uint32_t periodIndex = 0;
 
 //! tools/bin/makefsfile -i fs -o io_fsdata.h -r -h -q
 
+#define MAX_FLOW 40
 // Defines for setting up the system clock.
 #define SYSTICKHZ 100
 #define SYSTICKMS (1000 / SYSTICKHZ)
@@ -153,7 +158,7 @@ void lwIPHostTimerHandler(void)
       //
       // Indicate that there is no link.
       //
-      UARTprintf("Waiting for link.\n");
+      UARTprintf("Aguardando por conexão.\n");
     }
     else if (ui32NewIPAddress == 0)
     {
@@ -161,17 +166,17 @@ void lwIPHostTimerHandler(void)
       // There is no IP address, so indicate that the DHCP process is
       // running.
       //
-      UARTprintf("Waiting for IP address.\n");
+      UARTprintf("Aguardando por endereço IP.\n");
     }
     else
     {
       //
       // Display the new IP address.
       //
-      UARTprintf("IP Address: ");
+      UARTprintf("Endereço IP: ");
       DisplayIPAddress(ui32NewIPAddress);
       UARTprintf("\n");
-      UARTprintf("Open a browser and enter the IP address.\n");
+      UARTprintf("Abra um navegador e acesse o IP acima.\n");
     }
 
     //
@@ -195,53 +200,36 @@ void configureEthernet()
 {
   uint32_t ui32User0, ui32User1;
   uint8_t pui8MACArray[8];
-
-  //
   // Configure debug port for internal use.
-  //
   UARTStdioConfig(0, 115200, g_ui32SysClock);
 
-  //
   // Clear the terminal and print a banner.
-  //
-  UARTprintf("\033[2J\033[H");
-  UARTprintf("Ethernet IO Example\n\n");
+  UARTprintf("Initializando Ethernet");
 
-  //
   // Configure SysTick for a periodic interrupt.
-  //
   MAP_SysTickPeriodSet(g_ui32SysClock / SYSTICKHZ);
   MAP_SysTickEnable();
   MAP_SysTickIntEnable();
 
-  //
   // Configure the hardware MAC address for Ethernet Controller filtering of
   // incoming packets.  The MAC address will be stored in the non-volatile
   // USER0 and USER1 registers.
-  //
   MAP_FlashUserGet(&ui32User0, &ui32User1);
   if ((ui32User0 == 0xffffffff) || (ui32User1 == 0xffffffff))
   {
-    //
     // Let the user know there is no MAC address
-    //
     UARTprintf("No MAC programmed!\n");
 
     while (1)
     {
     }
   }
-
-  //
   // Tell the user what we are doing just now.
-  //
-  UARTprintf("Waiting for IP.\n");
+  UARTprintf("Esperando por IP.\n");
 
-  //
   // Convert the 24/24 split MAC address from NV ram into a 32/16 split
   // MAC address needed to program the hardware registers, then program
   // the MAC address into the Ethernet Controller registers.
-  //
   pui8MACArray[0] = ((ui32User0 >> 0) & 0xff);
   pui8MACArray[1] = ((ui32User0 >> 8) & 0xff);
   pui8MACArray[2] = ((ui32User0 >> 16) & 0xff);
@@ -249,17 +237,13 @@ void configureEthernet()
   pui8MACArray[4] = ((ui32User1 >> 8) & 0xff);
   pui8MACArray[5] = ((ui32User1 >> 16) & 0xff);
 
-  //
   // Initialze the lwIP library, using DHCP.
-  //
   lwIPInit(g_ui32SysClock, pui8MACArray, 0, 0, 0, IPADDR_USE_DHCP);
 
-  //
   // Setup the device locator service.
-  //
   LocatorInit();
   LocatorMACAddrSet(pui8MACArray);
-  LocatorAppTitleSet("EK-TM4C1294XL enet_io");
+  LocatorAppTitleSet("EK-TM4C1294XL Projeto SO-C2");
 
   //
   // Initialize a sample httpd server.
@@ -296,18 +280,18 @@ void PortAIntHandler(void)
   if (firstPulse)
   {
     firstTime = TimerValueGet64(TIMER0_BASE);
-    //UARTprintf("\r\nFirst!!: %i.", (int)(firstTime));
     firstPulse = false;
   }
   else
   {
-    measuredFrequency = firstTime - TimerValueGet64(TIMER0_BASE);
-    //UARTprintf("\r\nSecond!!: %i.", (int)(measuredFrequency));
+    secondTime = firstTime - TimerValueGet64(TIMER0_BASE);
 
-    if (measuredFrequency >= 2000000)
+    if (secondTime >= 2000000)
     {
+      periodAverage[periodIndex] = firstTime - TimerValueGet64(TIMER0_BASE);
+      if (++periodIndex >= PERIOD_SAMPLES)
+        periodIndex = 0;
       TimerLoadSet64(TIMER0_BASE, g_ui32SysClock);
-      automaticModeSpeed = measuredFrequency;
       firstPulse = true;
     }
   }
@@ -325,58 +309,28 @@ void configureTimer(void)
 
   IntMasterEnable();
 
-  // Configure TimerA as a half-width one-shot timer, and TimerB as a
-  // half-width edge capture counter.
   ROM_TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC);
   ROM_TimerLoadSet(TIMER0_BASE, TIMER_A, g_ui32SysClock);
-  // Set the count time for the the one-shot timer (TimerA).
-  //
-  //TimerLoadSet64(TIMER0_BASE, 0);
-
-  // TimerLoadSet(TIMER0_BASE, TIMER_A, 3000);
-  //TimerLoadSet(TIMER0_BASE, TIMER_A, 3000);
-  //
-  // Configure the counter (TimerB) to count both edges.
-  //
-  // TimerControlEvent(TIMER0_BASE, TIMER_B, TIMER_EVENT_NEG_EDGE);
 
   IntEnable(INT_TIMER0A);
   TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
 
-  //GPIOPinConfigure(GPIO_PD1_T0CCP1);
-
-  //GPIOPinTypeTimer(GPIO_PORTD_AHB_BASE, GPIO_PIN_1);
-  //GPIOIntTypeSet(GPIO_PORTD_AHB_BASE, GPIO_PIN_1, GPIO_FALLING_EDGE);
-
-  //
-  // Enable the timers.
-  //
   TimerEnable(TIMER0_BASE, TIMER_A);
 }
 
 Timer0BIntHandler(void)
 {
   TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
-  // timerEntries++;
 
-  measuredFrequency = 0;
-  //UARTprintf("\r\nSecond!!: %i.", (int)(measuredFrequency));
+  int i = 0;
+  for (i = 0; i < PERIOD_SAMPLES; i++)
+  {
+    periodAverage[i] = 0;
+  }
 
   TimerLoadSet64(TIMER0_BASE, g_ui32SysClock);
-  //UARTprintf("\r\nTIMER!");
 
-  // if(firstPulse)
-  // {
-  //     firstTime = TimerValueGet64(TIMER0_BASE);
-  //     firstPulse = false;
-  // }
-  // else
-  // {
-  //     measuredFrequency = TimerValueGet64(TIMER0_BASE) - firstPulse;
-  //     firstPulse = true;
-  // }
-
-  timerValue = interruptValue; ///TimerValueGet(TIMER0_BASE, TIMER_B);
+  timerValue = interruptValue;
 
   interruptValue = 0;
 }
@@ -475,16 +429,12 @@ void ethernetTask(void *pvParameters)
 void demoSerialTask(void *pvParameters)
 {
   // Set up the UART which is connected to the virtual COM port
-  UARTprintf("\r\nHello, world from FreeRTOS 9.0!");
+  UARTprintf("\r\nTask Serial Inicializada!");
 
   for (;;)
   {
-    // UARTprintf("\r\nTimer interrupts: %i.", (int)(timerEntries));
-    // UARTprintf("\r\nTimer interrupts: %i.", (int)(timerValue));
-    //    UARTprintf("\r\nGPIO Interrupts: %i.", (int)(interruptValue));
-    UARTprintf("%i | ", ((int)(g_ui32SysClock / measuredFrequency)));
-    // UARTprintf("\r\nVelocidade Atual de PWM: %i.", (int)(getSpeed() * 400.0 / 4096.0));
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    UARTprintf("getspeed() * 2: %i\n", (getSpeed() * 2));
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }
 
@@ -566,7 +516,20 @@ void pwmTask(void *pvParameters)
 
   while (1)
   {
-    uint32_t pwmValue = systemOnline ? (getSpeed() * 400.0 / 30.0) : 1;
+    int i = 0;
+    uint64_t sum = 0;
+    for (i = 0; i < PERIOD_SAMPLES; i++)
+    {
+      sum += periodAverage[i];
+    }
+    sum = sum / PERIOD_SAMPLES;
+
+    measuredFrequency = ((int)(g_ui32SysClock / sum));
+
+    if (measuredFrequency < 0)
+      measuredFrequency = 0;
+
+    uint32_t pwmValue = systemOnline ? (getSpeed() * 4) : 1;
     if (pwmValue >= 400)
       pwmValue = 399;
     else if (pwmValue <= 0)
@@ -612,5 +575,5 @@ void adcTask(void *pvParameters)
 
 uint32_t getSpeed()
 {
-  return automaticMode ? ((int)(g_ui32SysClock / measuredFrequency)) : manualModeSpeed;
+  return automaticMode ? measuredFrequency*2 : (manualModeSpeed);
 }
