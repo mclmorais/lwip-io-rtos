@@ -6,12 +6,15 @@
                 "${workspaceFolder}/**",
                 "C:/lwipio/enet_io/FreeRTOS/portable/CCS/ARM_CM4F/portmacro.h",
                 "${workspaceFolder}/FreeRTOS/**",
-                "C:/ti/TivaWare_C_Series-2.1.4.178/**"
+                "C:/ti/TivaWare_C_Series-2.1.4.178/**",
+                "C:/ti/tivaware_c_series_2_1_4_178/**",
+                "C:/ti/tivaware_c_series_2_1_4_178/driverlib/**"
             ],
             "defines": [
                 "_DEBUG",
                 "UNICODE",
-                "_UNICODE"
+                "_UNICODE",
+                "PART_TM4C1294NCPDT"
             ],
             "cStandard": "c11",
             "intelliSenseMode": "msvc-x64"

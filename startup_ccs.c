@@ -65,6 +65,8 @@ extern void xPortSysTickHandler(void);
 extern void lwIPEthernetIntHandler(void);
 extern void SysTickIntHandler(void);
 extern void AnimTimerIntHandler(void);
+extern void Timer0BIntHandler(void);
+extern void PortAIntHandler(void);
 
 //*****************************************************************************
 //
@@ -93,7 +95,7 @@ void (* const g_pfnVectors[])(void) =
     0,                                      // Reserved
     xPortPendSVHandler,                     // The PendSV handler
     xPortSysTickHandler,                    // The SysTick handler
-    IntDefaultHandler,                      // GPIO Port A
+    PortAIntHandler,                      // GPIO Port A
     IntDefaultHandler,                      // GPIO Port B
     IntDefaultHandler,                      // GPIO Port C
     IntDefaultHandler,                      // GPIO Port D
@@ -112,8 +114,8 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // ADC Sequence 2
     IntDefaultHandler,                      // ADC Sequence 3
     IntDefaultHandler,                      // Watchdog timer
-    IntDefaultHandler,                      // Timer 0 subtimer A
-    IntDefaultHandler,                      // Timer 0 subtimer B
+    Timer0BIntHandler,                      // Timer 0 subtimer A
+    Timer0BIntHandler,                      // Timer 0 subtimer B
     IntDefaultHandler,                      // Timer 1 subtimer A
     IntDefaultHandler,                      // Timer 1 subtimer B
     AnimTimerIntHandler,                    // Timer 2 subtimer A

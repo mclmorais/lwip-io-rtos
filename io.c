@@ -243,7 +243,7 @@ io_set_animation_speed_string(char *pcBuf)
     {
         g_ulAnimSpeed = ulSpeed;
         io_set_timer(g_ulAnimSpeed);
-        manualModeSpeed = ulSpeed*4096.0/100.0;
+        manualModeSpeed = ulSpeed*30.0/100.0;
     }
 }
 
@@ -273,7 +273,7 @@ io_set_animation_speed(unsigned long ulSpeed)
 void
 io_get_animation_speed_string(char *pcBuf, int iBufLen)
 {
-    usnprintf(pcBuf, iBufLen, "%d%%", (int)(getSpeed()*100/4096));
+    usnprintf(pcBuf, iBufLen, "%d%%", (int)(getSpeed()*100.0/30.0));
 }
 
 //*****************************************************************************

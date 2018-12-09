@@ -68,6 +68,13 @@ bool systemOnline = false;
 bool automaticMode = true;
 uint32_t automaticModeSpeed = 0;
 uint32_t manualModeSpeed = 0;
+uint32_t timerValue = 0;
+uint32_t interruptValue = 0;
+uint32_t timerEntries = 0;
+bool firstPulse = true;
+uint32_t firstTime = 0;
+uint32_t secondTime = 0;
+uint32_t measuredFrequency = 0;
 
 //*****************************************************************************
 //
@@ -663,6 +670,112 @@ void configureEthernet()
     //
 }
 
+void configureGPIOInterrupt(void)
+{
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+
+    while (!SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOA))
+    {
+    }
+
+    IntEnable(INT_GPIOA);
+    GPIOPinTypeGPIOInput(GPIO_PORTA_AHB_BASE, GPIO_PIN_2);
+    GPIOIntTypeSet(GPIO_PORTA_AHB_BASE, GPIO_PIN_2, GPIO_FALLING_EDGE);
+    GPIOIntEnable(GPIO_PORTA_AHB_BASE, GPIO_PIN_2);
+}
+
+void PortAIntHandler(void)
+{
+    GPIOIntClear(GPIO_PORTA_AHB_BASE, GPIO_PIN_2);
+
+    if (firstPulse)
+    {
+        firstTime = TimerValueGet64(TIMER0_BASE);
+        //UARTprintf("\r\nFirst!!: %i.", (int)(firstTime));
+            firstPulse = false;
+    }
+    else
+    {
+        measuredFrequency = firstTime - TimerValueGet64(TIMER0_BASE);
+        //UARTprintf("\r\nSecond!!: %i.", (int)(measuredFrequency));
+
+        if (measuredFrequency >= 2000000)
+        {
+            TimerLoadSet64(TIMER0_BASE, g_ui32SysClock);
+            automaticModeSpeed = measuredFrequency;
+            firstPulse = true;
+        }
+    }
+}
+
+void configureTimer(void)
+{
+    // Enable the Timer0 peripheral
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
+
+    // Wait for the Timer0 module to beg ready.
+    while (!SysCtlPeripheralReady(SYSCTL_PERIPH_TIMER0))
+    {
+    }
+
+    IntMasterEnable();
+
+    // Configure TimerA as a half-width one-shot timer, and TimerB as a
+    // half-width edge capture counter.
+    ROM_TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC);
+    ROM_TimerLoadSet(TIMER0_BASE, TIMER_A, g_ui32SysClock);
+    // Set the count time for the the one-shot timer (TimerA).
+    //
+    //TimerLoadSet64(TIMER0_BASE, 0);
+
+    // TimerLoadSet(TIMER0_BASE, TIMER_A, 3000);
+    //TimerLoadSet(TIMER0_BASE, TIMER_A, 3000);
+    //
+    // Configure the counter (TimerB) to count both edges.
+    //
+    // TimerControlEvent(TIMER0_BASE, TIMER_B, TIMER_EVENT_NEG_EDGE);
+
+    IntEnable(INT_TIMER0A);
+    TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+
+    //GPIOPinConfigure(GPIO_PD1_T0CCP1);
+
+    //GPIOPinTypeTimer(GPIO_PORTD_AHB_BASE, GPIO_PIN_1);
+    //GPIOIntTypeSet(GPIO_PORTD_AHB_BASE, GPIO_PIN_1, GPIO_FALLING_EDGE);
+
+    //
+    // Enable the timers.
+    //
+    TimerEnable(TIMER0_BASE, TIMER_A);
+}
+
+Timer0BIntHandler(void)
+{
+    TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+    // timerEntries++;
+
+    measuredFrequency = 0;
+    //UARTprintf("\r\nSecond!!: %i.", (int)(measuredFrequency));
+
+    TimerLoadSet64(TIMER0_BASE, g_ui32SysClock);
+    //UARTprintf("\r\nTIMER!");
+
+    // if(firstPulse)
+    // {
+    //     firstTime = TimerValueGet64(TIMER0_BASE);
+    //     firstPulse = false;
+    // }
+    // else
+    // {
+    //     measuredFrequency = TimerValueGet64(TIMER0_BASE) - firstPulse;
+    //     firstPulse = true;
+    // }
+
+    timerValue = interruptValue; ///TimerValueGet(TIMER0_BASE, TIMER_B);
+
+    interruptValue = 0;
+}
+
 void configureController(void)
 {
     // Make sure the main oscillator is enabled because this is required by
@@ -705,9 +818,13 @@ int main(void)
 
     xTaskCreate(demoSerialTask, (const portCHAR *)"Serial Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
-    xTaskCreate(adcTask, (const portCHAR *)"ADC Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    //  xTaskCreate(adcTask, (const portCHAR *)"ADC Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
     xTaskCreate(pwmTask, (const portCHAR *)"PWM Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+
+    configureTimer();
+
+    configureGPIOInterrupt();
 
     vTaskStartScheduler();
     while (1)
@@ -757,8 +874,12 @@ void demoSerialTask(void *pvParameters)
 
     for (;;)
     {
-        UARTprintf("\r\nVelocidade Atual de PWM: %i.", (int)(getSpeed() * 400.0 / 4096.0));
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        // UARTprintf("\r\nTimer interrupts: %i.", (int)(timerEntries));
+        // UARTprintf("\r\nTimer interrupts: %i.", (int)(timerValue));
+        //    UARTprintf("\r\nGPIO Interrupts: %i.", (int)(interruptValue));
+        UARTprintf("%i | ", ((int)(g_ui32SysClock / measuredFrequency)));
+        // UARTprintf("\r\nVelocidade Atual de PWM: %i.", (int)(getSpeed() * 400.0 / 4096.0));
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
 
@@ -840,7 +961,7 @@ void pwmTask(void *pvParameters)
 
     while (1)
     {
-        uint32_t pwmValue = systemOnline ? (getSpeed() * 400.0 / 4096.0) : 1;
+        uint32_t pwmValue = systemOnline ? (getSpeed() * 400.0 / 30.0) : 1;
         if (pwmValue >= 400)
             pwmValue = 399;
         else if (pwmValue <= 0)
@@ -886,5 +1007,5 @@ void adcTask(void *pvParameters)
 
 uint32_t getSpeed()
 {
-    return automaticMode ? automaticModeSpeed : manualModeSpeed;
+    return automaticMode ? ((int)(g_ui32SysClock / measuredFrequency)) : manualModeSpeed;
 }
