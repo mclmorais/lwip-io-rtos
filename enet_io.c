@@ -26,6 +26,8 @@
 #include "httpserver_raw/httpd.h"
 #include "drivers/pinout.h"
 #include "io.h"
+#include "./i2c.h"
+#include "utils.h"
 
 // FreeRTOS includes
 #include "FreeRTOSConfig.h"
@@ -37,6 +39,7 @@ void ethernetTask(void *pvParameters);
 void testTask(void *pvParameters);
 void demoSerialTask(void *pvParameters);
 void adcTask(void *pvParameters);
+void oledTask(void *pvParameters);
 void pwmTask(void *pvParameters);
 uint32_t getSpeed();
 
@@ -381,6 +384,8 @@ int main(void)
 
   xTaskCreate(pwmTask, (const portCHAR *)"PWM Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
+  xTaskCreate(oledTask, (const portCHAR *)"OLED Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+
   configureTimer();
 
   configureGPIOInterrupt();
@@ -435,6 +440,8 @@ void demoSerialTask(void *pvParameters)
   {
     UARTprintf("getspeed() * 2: %i\n", (getSpeed() * 2));
     vTaskDelay(1000 / portTICK_PERIOD_MS);
+    I2C_OLED_Move_Cursor(0, 0);
+    I2C_OLED_Print(itoa(getSpeed()*2));
   }
 }
 
@@ -482,6 +489,38 @@ void configurePwm(void)
   // Enable the outputs.
   //
   PWMOutputState(PWM0_BASE, (PWM_OUT_4_BIT), true);
+}
+
+void configureOLED(void)
+{
+  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+
+  while (!SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOB))
+  {
+  }
+
+  GPIOPinTypeGPIOOutput(GPIO_PORTA_AHB_BASE, GPIO_PIN_2);
+  GPIOPinTypeGPIOOutputOD(GPIO_PORTA_AHB_BASE, GPIO_PIN_3);
+  GPIOPinTypeI2CSCL(GPIO_PORTA_AHB_BASE, GPIO_PIN_2);
+  GPIOPinTypeI2C(GPIO_PORTA_AHB_BASE, GPIO_PIN_3);
+
+  // 3. Limpar o AMSEL para desabilitar a analÃ³gica
+  GPIO_PORTB_AHB_AMSEL_R = 0x00;
+  // 4. Limpar PCTL para selecionar o GPIO
+  GPIO_PORTB_AHB_PCTL_R = 0x2200;
+  // 6. Limpar os bits AFSEL para 0 para selecionar GPIO sem função alternativa
+  GPIO_PORTB_AHB_AFSEL_R = 0x0C;
+  // 7. Setar os bits de DEN para habilitar I/O digital
+  GPIO_PORTB_AHB_DEN_R = 0x0C;
+  // 8. Habilitar resistor de pull-up interno, setar PUR para 1
+  GPIO_PORTD_AHB_PUR_R = 0x0F;
+  // 9. Registrador de Dreno Aberto
+  GPIO_PORTB_AHB_ODR_R = 0x08;
+  // 4. Limpar PCTL para selecionar o GPIO
+  GPIO_PORTB_AHB_PCTL_R = 0x2200;
+  I2C_Init();
+  I2C_OLED_Init();
+  I2C_OLED_Sequence_Init();
 }
 
 void pwmTask(void *pvParameters)
@@ -573,7 +612,17 @@ void adcTask(void *pvParameters)
   }
 }
 
+void oledTask(void *pvParameters)
+{
+  configureOLED();
+
+  while (1)
+  {
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+  }
+}
+
 uint32_t getSpeed()
 {
-  return automaticMode ? measuredFrequency*2 : (manualModeSpeed);
+  return automaticMode ? measuredFrequency * 2 : (manualModeSpeed);
 }
