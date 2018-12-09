@@ -71,89 +71,6 @@ extern uint32_t g_ui32SysClock;
 //*****************************************************************************
 volatile unsigned long g_ulAnimSpeed = 10;
 
-//*****************************************************************************
-//
-// Set the timer used to pace the animation.  We scale the timer timeout such
-// that a speed of 100% causes the timer to tick once every 20 mS (50Hz).
-//
-//*****************************************************************************
-static void
-io_set_timer(unsigned long ulSpeedPercent)
-{
-    unsigned long ulTimeout;
-
-    //
-    // Turn the timer off while we are mucking with it.
-    //
-    ROM_TimerDisable(TIMER2_BASE, TIMER_A);
-
-    //
-    // If the speed is non-zero, we reset the timeout.  If it is zero, we
-    // just leave the timer disabled.
-    //
-    if(ulSpeedPercent)
-    {
-        //
-        // Set Timeout
-        //
-        ulTimeout = g_ui32SysClock / 50;
-        ulTimeout = (ulTimeout * 100 ) / ulSpeedPercent;
-
-        ROM_TimerLoadSet(TIMER2_BASE, TIMER_A, ulTimeout);
-        ROM_TimerEnable(TIMER2_BASE, TIMER_A);
-    }
-}
-
-//*****************************************************************************
-//
-// Initialize the IO used in this demo
-//
-//*****************************************************************************
-void
-io_init(void)
-{
-    //
-    // Configure Port N0 for as an output for the status LED.
-    //
-    ROM_GPIOPinTypeGPIOOutput(LED_PORT_BASE, LED_PIN);
-
-    //
-    // Configure Port N0 for as an output for the animation LED.
-    //
-    ROM_GPIOPinTypeGPIOOutput(LED_ANIM_PORT_BASE, LED_ANIM_PIN);
-
-    //
-    // Initialize LED to OFF (0)
-    //
-    ROM_GPIOPinWrite(LED_PORT_BASE, LED_PIN, 0);
-
-    //
-    // Initialize animation LED to OFF (0)
-    //
-    ROM_GPIOPinWrite(LED_ANIM_PORT_BASE, LED_ANIM_PIN, 0);
-
-    //
-    // Enable the peripherals used by this example.
-    //
-    ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER2);
-
-    //
-    // Configure the timer used to pace the animation.
-    //
-    ROM_TimerConfigure(TIMER2_BASE, TIMER_CFG_PERIODIC);
-
-    //
-    // Setup the interrupts for the timer timeouts.
-    //
-    ROM_IntEnable(INT_TIMER2A);
-    ROM_TimerIntEnable(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
-
-    //
-    // Set the timer for the current animation speed.  This enables the
-    // timer as a side effect.
-    //
-    io_set_timer(g_ulAnimSpeed);
-}
 
 //*****************************************************************************
 //
@@ -242,7 +159,6 @@ io_set_animation_speed_string(char *pcBuf)
     if(ulSpeed <= 100)
     {
         g_ulAnimSpeed = ulSpeed;
-        io_set_timer(g_ulAnimSpeed);
         manualModeSpeed = ulSpeed*30.0/100.0;
     }
 }
@@ -261,7 +177,6 @@ io_set_animation_speed(unsigned long ulSpeed)
     if(ulSpeed <= 100)
     {
         g_ulAnimSpeed = ulSpeed;
-        io_set_timer(g_ulAnimSpeed);
     }
 }
 
