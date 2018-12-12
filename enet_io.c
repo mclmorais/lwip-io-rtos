@@ -132,6 +132,8 @@ void DisplayIPAddress(uint32_t ui32Addr)
   // Display the string.
   //
   UARTprintf(pcBuf);
+  I2C_OLED_Move_Cursor(1, 0);
+  I2C_OLED_Print(pcBuf);
 }
 
 //*****************************************************************************
@@ -162,6 +164,8 @@ void lwIPHostTimerHandler(void)
       // Indicate that there is no link.
       //
       UARTprintf("Aguardando por conexão.\n");
+      I2C_OLED_Move_Cursor(0, 0);
+      I2C_OLED_Print("Aguard. Conexao ");
     }
     else if (ui32NewIPAddress == 0)
     {
@@ -170,12 +174,16 @@ void lwIPHostTimerHandler(void)
       // running.
       //
       UARTprintf("Aguardando por endereço IP.\n");
+      I2C_OLED_Move_Cursor(0, 0);
+      I2C_OLED_Print("Aguard. IP      ");
     }
     else
     {
       //
       // Display the new IP address.
       //
+      I2C_OLED_Move_Cursor(0, 0);
+      I2C_OLED_Print("Endereco IP:    ");
       UARTprintf("Endereço IP: ");
       DisplayIPAddress(ui32NewIPAddress);
       UARTprintf("\n");
@@ -207,7 +215,9 @@ void configureEthernet()
   UARTStdioConfig(0, 115200, g_ui32SysClock);
 
   // Clear the terminal and print a banner.
-  UARTprintf("Initializando Ethernet");
+  I2C_OLED_Move_Cursor(0, 0);
+  I2C_OLED_Print("Inic. Ethernet  ");
+  UARTprintf("Initializando Ethernet\n");
 
   // Configure SysTick for a periodic interrupt.
   MAP_SysTickPeriodSet(g_ui32SysClock / SYSTICKHZ);
@@ -374,13 +384,13 @@ int main(void)
 
   configureController();
 
+  configureOLED();
+
   configureEthernet();
 
   xTaskCreate(ethernetTask, (const portCHAR *)"Ethernet Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
   xTaskCreate(demoSerialTask, (const portCHAR *)"Serial Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-
-  //  xTaskCreate(adcTask, (const portCHAR *)"ADC Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
   xTaskCreate(pwmTask, (const portCHAR *)"PWM Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
@@ -435,13 +445,21 @@ void demoSerialTask(void *pvParameters)
 {
   // Set up the UART which is connected to the virtual COM port
   UARTprintf("\r\nTask Serial Inicializada!");
-
+  I2C_OLED_Move_Cursor(4, 0);
+  //I2C_OLED_Print("Vazao: ");
   for (;;)
   {
-    UARTprintf("getspeed() * 2: %i\n", (getSpeed() * 2));
+    UARTprintf("getspeed() * 2: %i\n", (measuredFrequency * 2));
     vTaskDelay(1000 / portTICK_PERIOD_MS);
-    I2C_OLED_Move_Cursor(0, 0);
-    I2C_OLED_Print(itoa(getSpeed()*2));
+    // I2C_OLED_Move_Cursor(4, 56);
+    // char asciiFlow[4];
+    // asciiFlow[0] = (measuredFrequency / 200 + 48);
+    // asciiFlow[1] = (measuredFrequency / 20) + 48;
+    // asciiFlow[2] = ((measuredFrequency * 2) % 10) + 48;
+    // asciiFlow[3] = '\0';
+    // I2C_OLED_Print(asciiFlow);
+    // I2C_OLED_Move_Cursor(4, 80);
+    // I2C_OLED_Print("ml/s");
   }
 }
 
@@ -614,7 +632,6 @@ void adcTask(void *pvParameters)
 
 void oledTask(void *pvParameters)
 {
-  configureOLED();
 
   while (1)
   {
