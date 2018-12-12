@@ -59,6 +59,8 @@ int32_t measuredFrequency = 0;
 uint32_t periodAverage[PERIOD_SAMPLES] = {0};
 uint32_t periodIndex = 0;
 
+#define PWM_CLOCKS 32000
+
 //! tools/bin/makefsfile -i fs -o io_fsdata.h -r -h -q
 
 #define MAX_FLOW 40
@@ -161,7 +163,7 @@ void lwIPHostTimerHandler(void)
       //
       // Indicate that there is no link.
       //
-      UARTprintf("Aguardando por conexão.\n");
+      UARTprintf("Aguardando por conexï¿½o.\n");
     }
     else if (ui32NewIPAddress == 0)
     {
@@ -169,14 +171,14 @@ void lwIPHostTimerHandler(void)
       // There is no IP address, so indicate that the DHCP process is
       // running.
       //
-      UARTprintf("Aguardando por endereço IP.\n");
+      UARTprintf("Aguardando por endereï¿½o IP.\n");
     }
     else
     {
       //
       // Display the new IP address.
       //
-      UARTprintf("Endereço IP: ");
+      UARTprintf("Endereï¿½o IP: ");
       DisplayIPAddress(ui32NewIPAddress);
       UARTprintf("\n");
       UARTprintf("Abra um navegador e acesse o IP acima.\n");
@@ -289,6 +291,7 @@ void PortAIntHandler(void)
   {
     secondTime = firstTime - TimerValueGet64(TIMER0_BASE);
 
+    UARTprintf("%i | ", secondTime);
     if (secondTime >= 2000000)
     {
       periodAverage[periodIndex] = firstTime - TimerValueGet64(TIMER0_BASE);
@@ -438,10 +441,10 @@ void demoSerialTask(void *pvParameters)
 
   for (;;)
   {
-    UARTprintf("getspeed() * 2: %i\n", (getSpeed() * 2));
+    UARTprintf("%i | ", measuredFrequency );//(getSpeed() * PWM_CLOCKS/100));
     vTaskDelay(1000 / portTICK_PERIOD_MS);
-    I2C_OLED_Move_Cursor(0, 0);
-    I2C_OLED_Print(itoa(getSpeed()*2));
+    //I2C_OLED_Move_Cursor(0, 0);
+    //I2C_OLED_Print(itoa(getSpeed()*2));
   }
 }
 
@@ -508,7 +511,7 @@ void configureOLED(void)
   GPIO_PORTB_AHB_AMSEL_R = 0x00;
   // 4. Limpar PCTL para selecionar o GPIO
   GPIO_PORTB_AHB_PCTL_R = 0x2200;
-  // 6. Limpar os bits AFSEL para 0 para selecionar GPIO sem função alternativa
+  // 6. Limpar os bits AFSEL para 0 para selecionar GPIO sem funï¿½ï¿½o alternativa
   GPIO_PORTB_AHB_AFSEL_R = 0x0C;
   // 7. Setar os bits de DEN para habilitar I/O digital
   GPIO_PORTB_AHB_DEN_R = 0x0C;
@@ -545,7 +548,7 @@ void pwmTask(void *pvParameters)
   // Set the period. For a 50 KHz frequency, the period = 1/50,000, or 20
   // microseconds. For a 20 MHz clock, this translates to 400 clock ticks.
   // Use this value to set the period.
-  PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, 400);
+  PWMGenPeriodSet(PWM0_BASE, PWM_GEN_2, PWM_CLOCKS);
 
   // Start the timers in generator 0.
   PWMGenEnable(PWM0_BASE, PWM_GEN_2);
@@ -568,13 +571,13 @@ void pwmTask(void *pvParameters)
     if (measuredFrequency < 0)
       measuredFrequency = 0;
 
-    uint32_t pwmValue = systemOnline ? (getSpeed() * 4) : 1;
-    if (pwmValue >= 400)
-      pwmValue = 399;
+    uint32_t pwmValue = systemOnline ? (getSpeed() * PWM_CLOCKS/100) : 1;
+    if (pwmValue >= PWM_CLOCKS)
+      pwmValue = PWM_CLOCKS-1;
     else if (pwmValue <= 0)
       pwmValue = 1;
-    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_4, (int)pwmValue);
-
+    //PWMPulseWidthSet(PWM0_BASE, PWM_OUT_4, (int)pwmValue);
+    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_4, pwmValue);
     vTaskDelay(10 / portTICK_PERIOD_MS);
   }
 }
@@ -624,5 +627,5 @@ void oledTask(void *pvParameters)
 
 uint32_t getSpeed()
 {
-  return automaticMode ? measuredFrequency * 2 : (manualModeSpeed);
+  return automaticMode ? measuredFrequency : (manualModeSpeed);
 }
