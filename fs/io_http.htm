@@ -43,12 +43,12 @@
                                     </td>
                                 </tr>
                                 <tr>
+                                    <td>Modo Manual</td>
                                     <td>
-                                        <input id="speed_set" value="Modo Manual" onclick="speedSet()" type="button">
+                                        <input type="range" onchange="changeValueRange(this.value)" oninput="liverange(this.value)" name="points" min="0" max="100"> <span id="rangevalue">0</span>%
                                     </td>
-                                    <td>
-                                        <input maxlength="3" size="4" id="speed_percent" type="text">%</td>
                                 </tr>
+                                <input maxlength="3" hidden size="4" id="speed_percent" type="text"></td>
                             </tbody>
                         </table>
                         <table>

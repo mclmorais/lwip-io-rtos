@@ -177,3 +177,13 @@ function loadPage(page)
     }
   }
 }
+
+function changeValueRange(value)
+{
+  document.getElementById("speed_percent").value = value;
+  speedSet();
+}
+
+function liverange(value){
+  document.getElementById("rangevalue").innerHTML = value;
+}
