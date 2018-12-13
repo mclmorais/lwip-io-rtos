@@ -55,7 +55,7 @@ uint32_t firstTime = 0;
 uint32_t secondTime = 0;
 int32_t measuredFrequency = 0;
 
-#define PERIOD_SAMPLES 10
+#define PERIOD_SAMPLES 1
 uint32_t periodAverage[PERIOD_SAMPLES] = {0};
 uint32_t periodIndex = 0;
 
@@ -291,7 +291,7 @@ void PortAIntHandler(void)
   {
     secondTime = firstTime - TimerValueGet64(TIMER0_BASE);
 
-    UARTprintf("%i | ", secondTime);
+    //UARTprintf("%i | ", secondTime);
     if (secondTime >= 2000000)
     {
       periodAverage[periodIndex] = firstTime - TimerValueGet64(TIMER0_BASE);
@@ -441,7 +441,7 @@ void demoSerialTask(void *pvParameters)
 
   for (;;)
   {
-    UARTprintf("%i | ", measuredFrequency );//(getSpeed() * PWM_CLOCKS/100));
+   // UARTprintf("%i | ", measuredFrequency );//(getSpeed() * PWM_CLOCKS/100));
     vTaskDelay(1000 / portTICK_PERIOD_MS);
     //I2C_OLED_Move_Cursor(0, 0);
     //I2C_OLED_Print(itoa(getSpeed()*2));
@@ -526,6 +526,9 @@ void configureOLED(void)
   I2C_OLED_Sequence_Init();
 }
 
+int32_t erroAnterior = 0;
+int32_t rawPwmAnterior = 0;
+
 void pwmTask(void *pvParameters)
 {
   ROM_GPIOPinConfigure(GPIO_PG0_M0PWM4);
@@ -571,14 +574,37 @@ void pwmTask(void *pvParameters)
     if (measuredFrequency < 0)
       measuredFrequency = 0;
 
-    uint32_t pwmValue = systemOnline ? (getSpeed() * PWM_CLOCKS/100) : 1;
-    if (pwmValue >= PWM_CLOCKS)
-      pwmValue = PWM_CLOCKS-1;
-    else if (pwmValue <= 0)
-      pwmValue = 1;
-    //PWMPulseWidthSet(PWM0_BASE, PWM_OUT_4, (int)pwmValue);
-    PWMPulseWidthSet(PWM0_BASE, PWM_OUT_4, pwmValue);
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+  
+    uint32_t percentFrequency = measuredFrequency * 100 / 23;
+
+    if(percentFrequency > 100) percentFrequency = 100;
+
+    int32_t k = 8;
+    //double a = 0.1;
+
+    //uint32_t rawPwm = manualModeSpeed + k*(manualModeSpeed - percentFrequency);
+    int32_t erroAtual = ((manualModeSpeed - percentFrequency));
+    int32_t rawPwm = ((int32_t)(k*erroAtual-(k*erroAnterior/10)+rawPwmAnterior));
+
+    if(rawPwm <= 0) rawPwm = 0;
+    if(rawPwm > 100) rawPwm = 100;
+
+    erroAnterior = erroAtual;
+    rawPwmAnterior = rawPwm;
+
+    UARTprintf("%i,%i,%i,%i\n", percentFrequency, manualModeSpeed, rawPwm, erroAtual);
+
+      uint32_t pwmValue = systemOnline ? ((int)(rawPwm * PWM_CLOCKS/100)) : 1;
+      if (pwmValue >= PWM_CLOCKS)
+        pwmValue = PWM_CLOCKS-1;
+      else if (pwmValue <= 0)
+        pwmValue = 1;
+      //PWMPulseWidthSet(PWM0_BASE, PWM_OUT_4, (int)pwmValue);
+      PWMPulseWidthSet(PWM0_BASE, PWM_OUT_4, pwmValue);
+
+
+
+    vTaskDelay(200 / portTICK_PERIOD_MS);
   }
 }
 
