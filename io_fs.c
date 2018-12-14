@@ -41,7 +41,6 @@ extern uint32_t automaticModeSpeed;
 extern uint32_t manualModeSpeed;
 extern uint32_t getSpeed();
 
-
 //*****************************************************************************
 //
 // Include the web file system data for this application.  This file is
@@ -75,15 +74,15 @@ fs_open(const char *pcName)
     // Allocate memory for the file system structure.
     //
     psFile = mem_malloc(sizeof(struct fs_file));
-    if(psFile == NULL)
+    if (psFile == NULL)
     {
-        return(NULL);
+        return (NULL);
     }
 
     //
     // Process request to toggle STATUS LED
     //
-    if(ustrncmp(pcName, "/cgi-bin/toggle_led", 19) == 0)
+    if (ustrncmp(pcName, "/cgi-bin/toggle_led", 19) == 0)
     {
         static char pcBuf[4];
 
@@ -106,13 +105,13 @@ fs_open(const char *pcName)
         //
         // Return the psFile system pointer.
         //
-        return(psFile);
+        return (psFile);
     }
 
     //
     // Request for LED State?
     //
-    else if(ustrncmp(pcName, "/ledstate", 9) == 0)
+    else if (ustrncmp(pcName, "/ledstate", 9) == 0)
     {
         static char pcBuf[4];
 
@@ -125,12 +124,12 @@ fs_open(const char *pcName)
         psFile->len = strlen(pcBuf);
         psFile->index = psFile->len;
         psFile->pextension = NULL;
-        return(psFile);
+        return (psFile);
     }
     //
     // Request for the animation speed?
     //
-    else if(ustrncmp(pcName, "/get_speed", 10) == 0)
+    else if (ustrncmp(pcName, "/get_speed", 10) == 0)
     {
         automaticMode = true;
 
@@ -145,31 +144,26 @@ fs_open(const char *pcName)
         psFile->len = strlen(pcBuf);
         psFile->index = psFile->len;
         psFile->pextension = NULL;
-        return(psFile);
+        return (psFile);
     }
-    //
-    // Set the animation speed?
-    //
-    else if(ustrncmp(pcName, "/cgi-bin/set_speed?percent=", 12) == 0)
+
+    // Set reference speed
+    else if (ustrncmp(pcName, "/cgi-bin/set_speed?percent=", 12) == 0)
     {
         automaticMode = false;
         static char pcBuf[6];
 
-        //
         // Extract the parameter and set the actual speed requested.
-        //
-        io_set_animation_speed_string((char*)pcName + 27);
+        io_set_animation_speed_string((char *)pcName + 27);
 
-        //
         // Get the current speed setting as a string to send back.
-        //
-        io_get_animation_speed_string(pcBuf, 6);
+        usnprintf(pcBuf, 6, "%d", manualModeSpeed);
 
         psFile->data = pcBuf;
         psFile->len = strlen(pcBuf);
         psFile->index = psFile->len;
         psFile->pextension = NULL;
-        return(psFile);
+        return (psFile);
     }
     //
     // If I can't find it there, look in the rest of the main psFile system
@@ -185,13 +179,13 @@ fs_open(const char *pcName)
         //
         // Begin processing the linked list, looking for the requested file name.
         //
-        while(NULL != psTree)
+        while (NULL != psTree)
         {
             //
             // Compare the requested file "pcName" to the file name in the
             // current node.
             //
-            if(ustrncmp(pcName, (char *)psTree->name, psTree->len) == 0)
+            if (ustrncmp(pcName, (char *)psTree->name, psTree->len) == 0)
             {
                 //
                 // Fill in the data pointer and length values from the
@@ -230,7 +224,7 @@ fs_open(const char *pcName)
     // If we didn't find the file, ptTee will be NULL.  Make sure we
     // return a NULL pointer if this happens.
     //
-    if(NULL == psTree)
+    if (NULL == psTree)
     {
         mem_free(psFile);
         psFile = NULL;
@@ -239,7 +233,7 @@ fs_open(const char *pcName)
     //
     // Return the file system pointer.
     //
-    return(psFile);
+    return (psFile);
 }
 
 //*****************************************************************************
@@ -247,8 +241,7 @@ fs_open(const char *pcName)
 // Close an opened file designated by the handle.
 //
 //*****************************************************************************
-void
-fs_close(struct fs_file *psFile)
+void fs_close(struct fs_file *psFile)
 {
     //
     // Free the main psFile system object.
@@ -263,32 +256,31 @@ fs_close(struct fs_file *psFile)
 // a -1 if at the end of file.
 //
 //*****************************************************************************
-int
-fs_read(struct fs_file *psFile, char *pcBuffer, int iCount)
+int fs_read(struct fs_file *psFile, char *pcBuffer, int iCount)
 {
     int iAvailable;
 
     //
     // Check to see if a command (pextension = 1).
     //
-    if(psFile->pextension == (void *)1)
+    if (psFile->pextension == (void *)1)
     {
         //
         // Nothing to do for this file type.
         //
         psFile->pextension = NULL;
-        return(-1);
+        return (-1);
     }
 
     //
     // Check to see if more data is available.
     //
-    if(psFile->len == psFile->index)
+    if (psFile->len == psFile->index)
     {
         //
         // There is no remaining data.  Return a -1 for EOF indication.
         //
-        return(-1);
+        return (-1);
     }
 
     //
@@ -296,7 +288,7 @@ fs_read(struct fs_file *psFile, char *pcBuffer, int iCount)
     // parameter or the available data in the file system buffer.
     //
     iAvailable = psFile->len - psFile->index;
-    if(iAvailable > iCount)
+    if (iAvailable > iCount)
     {
         iAvailable = iCount;
     }
@@ -310,7 +302,7 @@ fs_read(struct fs_file *psFile, char *pcBuffer, int iCount)
     //
     // Return the count of data that we copied.
     //
-    return(iAvailable);
+    return (iAvailable);
 }
 
 //*****************************************************************************
@@ -318,11 +310,10 @@ fs_read(struct fs_file *psFile, char *pcBuffer, int iCount)
 // Determine the number of bytes left to read from the file.
 //
 //*****************************************************************************
-int
-fs_bytes_left(struct fs_file *psFile)
+int fs_bytes_left(struct fs_file *psFile)
 {
     //
     // Return the number of bytes left to be read from this file.
     //
-    return(psFile->len - psFile->index);
+    return (psFile->len - psFile->index);
 }

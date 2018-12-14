@@ -44,7 +44,7 @@ void pwmTask(void *pvParameters);
 uint32_t getSpeed();
 
 bool systemOnline = false;
-bool automaticMode = true;
+bool automaticMode = false;
 uint32_t automaticModeSpeed = 0;
 uint32_t manualModeSpeed = 0;
 uint32_t timerValue = 0;
@@ -58,6 +58,8 @@ int32_t measuredFrequency = 0;
 #define PERIOD_SAMPLES 1
 uint32_t periodAverage[PERIOD_SAMPLES] = {0};
 uint32_t periodIndex = 0;
+
+int32_t a = 10;
 
 #define PWM_CLOCKS 32000
 
@@ -574,7 +576,7 @@ void pwmTask(void *pvParameters)
     if (measuredFrequency < 0)
       measuredFrequency = 0;
 
-  
+
     uint32_t percentFrequency = measuredFrequency * 100 / 23;
 
     if(percentFrequency > 100) percentFrequency = 100;
@@ -584,7 +586,7 @@ void pwmTask(void *pvParameters)
 
     //uint32_t rawPwm = manualModeSpeed + k*(manualModeSpeed - percentFrequency);
     int32_t erroAtual = ((manualModeSpeed - percentFrequency));
-    int32_t rawPwm = ((int32_t)(k*erroAtual-(k*erroAnterior/10)+rawPwmAnterior));
+    int32_t rawPwm = ((int32_t)(k*erroAtual-(k*erroAnterior/a)+rawPwmAnterior));
 
     if(rawPwm <= 0) rawPwm = 0;
     if(rawPwm > 100) rawPwm = 100;

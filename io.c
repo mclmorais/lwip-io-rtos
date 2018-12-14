@@ -71,14 +71,12 @@ extern uint32_t g_ui32SysClock;
 //*****************************************************************************
 volatile unsigned long g_ulAnimSpeed = 10;
 
-
 //*****************************************************************************
 //
 // Set the status LED on or off.
 //
 //*****************************************************************************
-void
-io_set_led(bool bOn)
+void io_set_led(bool bOn)
 {
     //
     // Turn the LED on or off as requested.
@@ -91,15 +89,14 @@ io_set_led(bool bOn)
 // Return LED state
 //
 //*****************************************************************************
-void
-io_get_ledstate(char * pcBuf, int iBufLen)
+void io_get_ledstate(char *pcBuf, int iBufLen)
 {
 
-    usnprintf(pcBuf, iBufLen, systemOnline? "ON" : "OFF");
+    usnprintf(pcBuf, iBufLen, systemOnline ? "ON" : "OFF");
     //
     // Get the state of the LED
     //
-    if(ROM_GPIOPinRead(LED_PORT_BASE, LED_PIN))
+    if (ROM_GPIOPinRead(LED_PORT_BASE, LED_PIN))
     {
         usnprintf(pcBuf, iBufLen, "ON");
     }
@@ -107,7 +104,6 @@ io_get_ledstate(char * pcBuf, int iBufLen)
     {
         usnprintf(pcBuf, iBufLen, "OFF");
     }
-
 }
 
 //*****************************************************************************
@@ -115,19 +111,18 @@ io_get_ledstate(char * pcBuf, int iBufLen)
 // Return LED state as an integer, 1 on, 0 off.
 //
 //*****************************************************************************
-int
-io_is_led_on(void)
+int io_is_led_on(void)
 {
     //
     // Get the state of the LED
     //
-    if(ROM_GPIOPinRead(LED_PORT_BASE, LED_PIN))
+    if (ROM_GPIOPinRead(LED_PORT_BASE, LED_PIN))
     {
-        return(true);
+        return (true);
     }
     else
     {
-        return(0);
+        return (0);
     }
 }
 
@@ -137,8 +132,7 @@ io_is_led_on(void)
 // speed is described as a decimal number encoded as an ASCII string.
 //
 //*****************************************************************************
-void
-io_set_animation_speed_string(char *pcBuf)
+void io_set_animation_speed_string(char *pcBuf)
 {
     unsigned long ulSpeed;
 
@@ -146,7 +140,7 @@ io_set_animation_speed_string(char *pcBuf)
     // Parse the passed parameter as a decimal number.
     //
     ulSpeed = 0;
-    while((*pcBuf >= '0') && (*pcBuf <= '9'))
+    while ((*pcBuf >= '0') && (*pcBuf <= '9'))
     {
         ulSpeed *= 10;
         ulSpeed += (*pcBuf - '0');
@@ -156,7 +150,7 @@ io_set_animation_speed_string(char *pcBuf)
     //
     // If the number is valid, set the new speed.
     //
-    if(ulSpeed <= 100)
+    if (ulSpeed <= 100)
     {
         g_ulAnimSpeed = ulSpeed;
         manualModeSpeed = ulSpeed;
@@ -168,13 +162,12 @@ io_set_animation_speed_string(char *pcBuf)
 // Set the speed of the animation shown on the display.
 //
 //*****************************************************************************
-void
-io_set_animation_speed(unsigned long ulSpeed)
+void io_set_animation_speed(unsigned long ulSpeed)
 {
     //
     // If the number is valid, set the new speed.
     //
-    if(ulSpeed <= 100)
+    if (ulSpeed <= 100)
     {
         g_ulAnimSpeed = ulSpeed;
     }
@@ -185,10 +178,9 @@ io_set_animation_speed(unsigned long ulSpeed)
 // Get the current animation speed as an ASCII string.
 //
 //*****************************************************************************
-void
-io_get_animation_speed_string(char *pcBuf, int iBufLen)
+void io_get_animation_speed_string(char *pcBuf, int iBufLen)
 {
-    usnprintf(pcBuf, iBufLen, "%d%%", (int)(getSpeed()));
+    usnprintf(pcBuf, iBufLen, "%d", manualModeSpeed);
 }
 
 //*****************************************************************************
@@ -199,5 +191,5 @@ io_get_animation_speed_string(char *pcBuf, int iBufLen)
 unsigned long
 io_get_animation_speed(void)
 {
-    return(g_ulAnimSpeed);
+    return (g_ulAnimSpeed);
 }

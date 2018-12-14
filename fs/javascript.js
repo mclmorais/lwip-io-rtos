@@ -4,7 +4,8 @@ window.onload = function ()
   document.getElementById('about').onclick = loadAbout;
   document.getElementById('io_http').onclick = loadIOHttp;
 
-  loadAbout();
+  loadIOHttp();
+  speedGet();
 
 }
 
@@ -45,22 +46,27 @@ function toggle_led()
 
   function ToggleComplete()
   {
-    if (req.readyState == 4) {
-      if (req.status == 200) {
+    if (req.readyState == 4)
+    {
+      if (req.status == 200)
+      {
         document.getElementById("ledstate").innerHTML = "<div>" +
           req.responseText + "</div>";
       }
     }
   }
 
-  if (window.XMLHttpRequest) {
+  if (window.XMLHttpRequest)
+  {
     req = new XMLHttpRequest();
   }
-  else if (window.ActiveXObject) {
+  else if (window.ActiveXObject)
+  {
     req = new ActiveXObject("Microsoft.XMLHTTP");
   }
-  if (req) {
-    req.open("GET", "/cgi-bin/toggle_led?id" + Math.round(Math.random()*1000), true);
+  if (req)
+  {
+    req.open("GET", "/cgi-bin/toggle_led", true);
     req.onreadystatechange = ToggleComplete;
     req.send(null);
   }
@@ -72,33 +78,47 @@ function speedGetInterval()
     return;
   interval = setInterval(speedGet, 500)
 }
-function speedSet()
-{
-  if (interval) {
-    clearInterval(interval)
-    interval = null;
-  }
 
+function speedRangeSet()
+{
+  speedSet(document.getElementById("reference_range").value);
+
+}
+
+
+function speedSet(value)
+{
   var req = false;
-  var speed_txt = document.getElementById("speed_percent");
+
   function speedComplete()
   {
-    if (req.readyState == 4) {
-      if (req.status == 200) {
-        document.getElementById("current_speed").innerHTML =
-          "<div>" + req.responseText + "</div>";
+    if (req.readyState == 4)
+    {
+      if (req.status == 200)
+      {
+        let number = req.responseText;
+        if (number < 10) number = "00" + number;
+        else if (number < 100) number = "0" + number;
+
+        document.getElementById("current_speed").innerHTML = number;
       }
     }
   }
-  if (window.XMLHttpRequest) {
+
+  if (window.XMLHttpRequest)
+  {
     req = new XMLHttpRequest();
   }
-  else if (window.ActiveXObject) {
+
+  else if (window.ActiveXObject)
+  {
     req = new ActiveXObject("Microsoft.XMLHTTP");
   }
-  if (req) {
-    req.open("GET", "/cgi-bin/set_speed?percent=" + speed_txt.value +
-      "&id" + Math.round(Math.random()*1000), true);
+
+  if (req)
+  {
+    req.open("GET", "/cgi-bin/set_speed?percent=" + value +
+      "&id" + Math.round(Math.random() * 1000), true);
     req.onreadystatechange = speedComplete;
     req.send(null);
   }
@@ -109,22 +129,27 @@ function ledstateGet()
   var led = false;
   function ledComplete()
   {
-    if (led.readyState == 4) {
-      if (led.status == 200) {
+    if (led.readyState == 4)
+    {
+      if (led.status == 200)
+      {
         document.getElementById("ledstate").innerHTML = "<div>" +
           led.responseText + "</div>";
       }
     }
   }
 
-  if (window.XMLHttpRequest) {
+  if (window.XMLHttpRequest)
+  {
     led = new XMLHttpRequest();
   }
-  else if (window.ActiveXObject) {
+  else if (window.ActiveXObject)
+  {
     led = new ActiveXObject("Microsoft.XMLHTTP");
   }
-  if (led) {
-    led.open("GET", "/ledstate?id=" + Math.round(Math.random()*1000), true);
+  if (led)
+  {
+    led.open("GET", "/ledstate?id=" + Math.round(Math.random() * 1000), true);
     led.onreadystatechange = ledComplete;
     led.send(null);
   }
@@ -136,21 +161,27 @@ function speedGet()
   var req = false;
   function speedReturned()
   {
-    if (req.readyState == 4) {
-      if (req.status == 200) {
-        document.getElementById("current_speed").innerHTML = "<div>" + req.responseText + "</div>";
+    if (req.readyState == 4)
+    {
+      if (req.status == 200)
+      {
+        document.getElementById("current_speed").innerHTML = req.responseText;
+        document.getElementById("reference_range").value = req.responseText;
       }
     }
   }
 
-  if (window.XMLHttpRequest) {
+  if (window.XMLHttpRequest)
+  {
     req = new XMLHttpRequest();
   }
-  else if (window.ActiveXObject) {
+  else if (window.ActiveXObject)
+  {
     req = new ActiveXObject("Microsoft.XMLHTTP");
   }
-  if (req) {
-    req.open("GET", "/get_speed?id=" + Math.round(Math.random()*1000), true);
+  if (req)
+  {
+    req.open("GET", "/get_speed?id=" + Math.round(Math.random() * 1000), true);
     req.onreadystatechange = speedReturned;
     req.send(null);
   }
@@ -158,10 +189,12 @@ function speedGet()
 
 function loadPage(page)
 {
-  if (window.XMLHttpRequest) {
+  if (window.XMLHttpRequest)
+  {
     xmlhttp = new XMLHttpRequest();
   }
-  else {
+  else
+  {
     xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
   }
 
@@ -172,7 +205,8 @@ function loadPage(page)
 
   xmlhttp.onreadystatechange = function ()
   {
-    if ((xmlhttp.readyState == 4) && (xmlhttp.status == 200)) {
+    if ((xmlhttp.readyState == 4) && (xmlhttp.status == 200))
+    {
       document.getElementById("content").innerHTML = xmlhttp.responseText;
     }
   }
