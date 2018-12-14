@@ -60,6 +60,7 @@ uint32_t periodAverage[PERIOD_SAMPLES] = {0};
 uint32_t periodIndex = 0;
 
 int32_t a = 10;
+int32_t k = 8;
 
 #define PWM_CLOCKS 32000
 
@@ -136,6 +137,38 @@ void DisplayIPAddress(uint32_t ui32Addr)
   // Display the string.
   //
   UARTprintf(pcBuf);
+}
+
+
+void UARTIntHandler(void)
+{
+    uint32_t ui32Status;
+
+    //
+    // Get the interrrupt status.
+    //
+    ui32Status = ROM_UARTIntStatus(UART0_BASE, true);
+
+    //
+    // Clear the asserted interrupts.
+    //
+    ROM_UARTIntClear(UART0_BASE, ui32Status);
+
+    //
+    // Loop while there are characters in the receive FIFO.
+    //
+    uint8_t received[5] = {0, 0, 0, '\0'};
+
+    int i = 0;
+    while(ROM_UARTCharsAvail(UART0_BASE))
+    {
+        //
+        // Read the next character from the UART and write it back to the UART.
+        //
+        received[i] = ROM_UARTCharGetNonBlocking(UART0_BASE);
+        i++;
+        if(i > 5) i = 0;
+    }
 }
 
 //*****************************************************************************
@@ -581,7 +614,7 @@ void pwmTask(void *pvParameters)
 
     if(percentFrequency > 100) percentFrequency = 100;
 
-    int32_t k = 8;
+
     //double a = 0.1;
 
     //uint32_t rawPwm = manualModeSpeed + k*(manualModeSpeed - percentFrequency);
@@ -594,7 +627,7 @@ void pwmTask(void *pvParameters)
     erroAnterior = erroAtual;
     rawPwmAnterior = rawPwm;
 
-    UARTprintf("%i,%i,%i,%i\n", percentFrequency, manualModeSpeed, rawPwm, erroAtual);
+    UARTprintf("%i,%i,%i,%i,%i,%i\n", percentFrequency, manualModeSpeed, rawPwm, erroAtual, a, k);
 
       uint32_t pwmValue = systemOnline ? ((int)(rawPwm * PWM_CLOCKS/100)) : 1;
       if (pwmValue >= PWM_CLOCKS)
